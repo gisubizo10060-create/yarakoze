@@ -1,54 +1,46 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Global variables
-latest_location = {}
-gps_path = []
-voice_messages = []
+blind_location = {"lat": 0, "lng": 0}
 
-# --- HOME USER ---
 @app.route('/')
-def login():
-    return render_template('login.html', error=None)
-
-@app.route('/dashboard')
-def dashboard():
+def home():
     return render_template('dashboard.html')
 
-# --- BLIND ---
 @app.route('/blind')
 def blind():
     return render_template('blind.html')
 
-# --- API ENDPOINTS ---
-@app.route("/api/gps", methods=["POST"])
-def gps():
-    global latest_location, gps_path
+@app.route('/update_location', methods=['POST'])
+def update_location():
+    global blind_location
     data = request.json
-    latest_location = {"lat": data["lat"], "lng": data["lng"]}
-    gps_path.append(latest_location)
-    return jsonify({"status": "ok"})
+    blind_location = {"lat": data["lat"], "lng": data["lng"]}
+    socketio.emit('location_update', blind_location)
+    return {"status": "ok"}
 
-@app.route("/api/get_gps")
-def get_gps():
-    return jsonify(latest_location)
-
-@app.route("/api/get_path")
-def get_path():
-    return jsonify({"path": gps_path})
-
-@app.route("/api/send_message", methods=["POST"])
-def send_message():
+@app.route('/emergency', methods=['POST'])
+def emergency():
     data = request.json
-    voice_messages.append(data)  # {sender, content}
-    return jsonify({"status": "ok"})
+    socketio.emit('emergency_alert', {"message": data["message"]})
+    return {"status": "alert sent"}
 
-@app.route("/api/get_messages")
-def get_messages():
-    return jsonify(voice_messages)
+@app.route('/voice_from_blind', methods=['POST'])
+def voice_from_blind():
+    data = request.json
+    socketio.emit('voice_message', {"from": "blind", "message": data["message"]})
+    return {"status": "voice sent"}
+
+@app.route('/voice_from_home', methods=['POST'])
+def voice_from_home():
+    data = request.json
+    socketio.emit('voice_message', {"from": "home", "message": data["message"]})
+    return {"status": "voice sent"}
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000)

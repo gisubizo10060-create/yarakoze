@@ -1,29 +1,32 @@
 body {
-    font-family: Arial, sans-serif;
     background: linear-gradient(to right, #74ebd5, #ACB6E5);
-    text-align: center;
-}
-
-.centered {
-    text-align: center;
-    font-size: 1.5em;
-    margin-top: 20px;
+    font-family: Arial, sans-serif;
     color: #fff;
 }
 
-.circle-btn {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: none;
-    margin: 20px;
-    font-size: 1em;
-    background-color: #ff6b6b;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s;
+.centered-container {
+    text-align: center;
+    margin-top: 50px;
 }
 
-.circle-btn:hover {
-    transform: scale(1.1);
+button, input {
+    font-size: 20px;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 10px;
+}
+
+input {
+    width: 60%;
+}
+
+.circle-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: red;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
 }

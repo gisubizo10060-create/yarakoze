@@ -1,51 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Home Dashboard</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <h2 class="centered">Home Dashboard</h2>
-    <div id="map" style="height: 500px;"></div>
-    <input id="msgInput" placeholder="Send message to blind">
-    <button onclick="sendMessage()">Send</button>
-
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-    const socket = io();
-
-    // Map setup
-    const map = L.map('map').setView([0,0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    let marker = L.marker([0,0]).addTo(map);
-    let pathLine = L.polyline([], {color:'red'}).addTo(map);
-
-    // Update map
-    socket.on('update_map', data => {
-        const loc = data.location;
-        marker.setLatLng([loc.lat, loc.lng]);
-        pathLine.setLatLngs(data.path);
-        map.setView([loc.lat, loc.lng], 17);
-    });
-
-    // Emergency alert
-    socket.on('emergency_alert', data => alert(data.message));
-
-    // Voice from blind
-    socket.on('voice_from_blind', data => {
-        const audio = new Audio(data.audio);
-        audio.play();
-    });
-
-    // Send message to blind
-    function sendMessage() {
-        const msg = document.getElementById('msgInput').value;
-        socket.emit('message_to_blind', {message: msg});
-        document.getElementById('msgInput').value = '';
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home User Dashboard</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #11998e, #38ef7d);
+        color: #fff;
+        margin: 0;
+        padding: 0;
     }
-    </script>
+    #map {
+        height: 70vh;
+        width: 100%;
+    }
+    .messages {
+        height: 30vh;
+        background: rgba(0,0,0,0.2);
+        overflow-y: auto;
+        padding: 10px;
+    }
+    .message {
+        margin: 5px 0;
+        padding: 8px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 8px;
+    }
+</style>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+<script>
+const socket = io();
+let map, blindMarker, pathCoords = [], pathPolyline;
+
+function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 17,
+        center: {lat: 0, lng: 0},
+    });
+    blindMarker = new google.maps.Marker({map: map, title: "Blind's Location"});
+    pathPolyline = new google.maps.Polyline({map: map, path: pathCoords, strokeColor:'#FF0000', strokeWeight:3});
+}
+
+// Update blind location
+socket.on('location_update', (data) => {
+    const pos = {lat: data.lat, lng: data.lng};
+    blindMarker.setPosition(pos);
+    map.setCenter(pos);
+    pathCoords.push(pos);
+    pathPolyline.setPath(pathCoords);
+});
+
+// Emergency alert
+socket.on('emergency_alert', (data) => {
+    alert("EMERGENCY: " + data.message);
+});
+
+// Voice messages
+socket.on('voice_message', (data) => {
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.innerText = `${data.from.toUpperCase()}: ${data.message}`;
+    document.querySelector('.messages').appendChild(div);
+});
+</script>
+</head>
+<body onload="initMap()">
+<h1 style="text-align:center;">Blind Tracker Dashboard</h1>
+<div id="map"></div>
+<div class="messages"></div>
 </body>
 </html>
