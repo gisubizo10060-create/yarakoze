@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blind Stick Mobile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Blind Stick Interface</h1>
+    <button onclick="sendMovement('forward')">Forward</button>
+    <button onclick="sendMovement('left')">Left</button>
+    <button onclick="sendMovement('right')">Right</button>
+    <button onclick="sendObstacle(true)">Obstacle!</button>
+    <input type="text" id="voice" placeholder="Voice message">
+    <button onclick="sendVoice()">Send Voice</button>
+
+    <script>
+        const serverUrl = window.location.origin; // automatically uses Render URL
+
+        function sendMovement(direction){
+            navigator.geolocation.getCurrentPosition((pos)=>{
+                fetch(`${serverUrl}/update`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        direction: direction,
+                        obstacle: false,
+                        voice: ""
+                    })
+                });
+            });
+        }
+
+        function sendObstacle(flag){
+            navigator.geolocation.getCurrentPosition((pos)=>{
+                fetch(`${serverUrl}/update`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        direction: "",
+                        obstacle: flag,
+                        voice: ""
+                    })
+                });
+            });
+        }
+
+        function sendVoice(){
+            const message = document.getElementById("voice").value;
+            navigator.geolocation.getCurrentPosition((pos)=>{
+                fetch(`${serverUrl}/update`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        direction: "",
+                        obstacle: false,
+                        voice: message
+                    })
+                });
+            });
+        }
+    </script>
+</body>
+</html>
