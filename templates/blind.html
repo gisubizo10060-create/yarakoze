@@ -1,79 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Blind Stick</title>
-<link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <title>Blind Stick</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="centered">
-    <h1>Blind Stick</h1>
-    <button id="emergency" class="circle-btn">!</button>
-    <button id="voiceBtn">Send Voice Message</button>
-</div>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Blind Stick</title>
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<div class="centered">
-    <h1>Blind Stick</h1>
-    <button id="emergency" class="circle-btn">!</button>
-    <button id="recordBtn">Record Voice</button>
-    <button id="stopBtn" disabled>Stop</button>
-</div>
+    <h2 class="centered">Blind Stick Interface</h2>
+    <button id="emergencyBtn" class="circle-btn">Emergency Alert</button>
+    <button id="voiceBtn" class="circle-btn">Send Voice Message</button>
 
-<script>
-let mediaRecorder;
-let audioChunks = [];
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+    const socket = io();
 
-document.getElementById('emergency').addEventListener('click', () => {
-    fetch('/send_message', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({message:'Emergency!'})
-    });
-});
+    // Send location every 5 seconds
+    function sendLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                socket.emit('location_update', {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude
+                });
+            });
+        }
+    }
+    setInterval(sendLocation, 5000);
 
-// Voice recording
-document.getElementById('recordBtn').addEventListener('click', async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-    mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, {type:'audio/wav'});
-        const formData = new FormData();
-        formData.append('audio', blob, 'voice.wav');
-        await fetch('/upload_audio', {method:'POST', body: formData});
+    // Emergency button
+    document.getElementById('emergencyBtn').onclick = () => {
+        socket.emit('emergency', {message: 'Emergency! Blind needs help!'});
     };
-    mediaRecorder.start();
-    document.getElementById('stopBtn').disabled = false;
-});
 
-document.getElementById('stopBtn').addEventListener('click', () => {
-    mediaRecorder.stop();
-    document.getElementById('stopBtn').disabled = true;
-});
-</script>
-</body>
-</html>
-<script>
-document.getElementById('emergency').addEventListener('click', () => {
-    fetch('/send_message', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:'Emergency!'} )});
-});
+    // Voice message from blind
+    document.getElementById('voiceBtn').onclick = () => {
+        navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+            const mediaRecorder = new MediaRecorder(stream);
+            let chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, {type:'audio/webm'});
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    socket.emit('voice_to_home', {audio: reader.result});
+                };
+                reader.readAsDataURL(blob);
+            };
+            mediaRecorder.start();
+            setTimeout(()=>mediaRecorder.stop(), 5000); // record 5 sec
+        });
+    };
 
-document.getElementById('voiceBtn').addEventListener('click', () => {
-    fetch('/send_message', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:'Voice message sent'} )});
-});
-
-// Simulate moving blind's location
-setInterval(() => {
-    fetch('/update_location', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({lat:1.944 + Math.random()*0.001, lng:30.061 + Math.random()*0.001})});
-}, 5000);
-</script>
+    // Receive text-to-voice from home
+    socket.on('text_for_blind', data => {
+        const msg = new SpeechSynthesisUtterance(data.message);
+        window.speechSynthesis.speak(msg);
+    });
+    </script>
 </body>
 </html>

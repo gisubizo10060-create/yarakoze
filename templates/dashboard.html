@@ -1,62 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Home User Dashboard</title>
-<link rel="stylesheet" href="/static/style.css">
-<script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.css" />
+    <meta charset="UTF-8">
+    <title>Home Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="centered">
-    <h1>Home User Dashboard</h1>
-    <div id="map" style="height:400px;width:80%;margin:auto;"></div>
-    <h3>Messages</h3>
-    <div id="messages" class="messages"></div>
-    <input type="text" id="msgInput" placeholder="Type message">
-    <button id="sendBtn">Send</button>
-</div>
+    <h2 class="centered">Home Dashboard</h2>
+    <div id="map" style="height: 500px;"></div>
+    <input id="msgInput" placeholder="Send message to blind">
+    <button onclick="sendMessage()">Send</button>
 
-<script src="/static/blind.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+    const socket = io();
 
-<script>
-const map = L.map('map').setView([1.944, 30.061], 15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-}).addTo(map);
+    // Map setup
+    const map = L.map('map').setView([0,0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let marker = L.marker([0,0]).addTo(map);
+    let pathLine = L.polyline([], {color:'red'}).addTo(map);
 
-const marker = L.marker([1.944, 30.061]).addTo(map);
-let pathCoordinates = [[1.944, 30.061]];
-const pathLine = L.polyline(pathCoordinates, {color:'blue'}).addTo(map);
-
-async function updateLocation() {
-    const res = await fetch('/get_location');
-    const loc = await res.json();
-    marker.setLatLng([loc.lat, loc.lng]);
-    pathCoordinates.push([loc.lat, loc.lng]);
-    pathLine.setLatLngs(pathCoordinates);
-}
-
-setInterval(updateLocation, 3000);
-
-// Messages
-document.getElementById('sendBtn').addEventListener('click', async () => {
-    const msg = document.getElementById('msgInput').value;
-    await fetch('/send_home_message', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({message: msg})
+    // Update map
+    socket.on('update_map', data => {
+        const loc = data.location;
+        marker.setLatLng([loc.lat, loc.lng]);
+        pathLine.setLatLngs(data.path);
+        map.setView([loc.lat, loc.lng], 17);
     });
-    document.getElementById('msgInput').value = '';
-});
 
-function updateMessages() {
-    fetch('/get_messages')
-    .then(res => res.json())
-    .then(msgs => {
-        const container = document.getElementById('messages');
-        container.innerHTML = '';
-        msgs.forEach(m => {
-            if(m.startsWith('Audio message:')) {
-                const audio = document.createElement('audio');
-                au
+    // Emergency alert
+    socket.on('emergency_alert', data => alert(data.message));
+
+    // Voice from blind
+    socket.on('voice_from_blind', data => {
+        const audio = new Audio(data.audio);
+        audio.play();
+    });
+
+    // Send message to blind
+    function sendMessage() {
+        const msg = document.getElementById('msgInput').value;
+        socket.emit('message_to_blind', {message: msg});
+        document.getElementById('msgInput').value = '';
+    }
+    </script>
+</body>
+</html>

@@ -1,22 +1,13 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
-from flask_cors import CORS
-import os
-import time
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Create folder for audio files
-os.makedirs('audio', exist_ok=True)
-
-blind_location = {'lat': 1.944, 'lng': 30.061}
-messages = []
+# Store blind's path
+blind_path = []
 
 @app.route('/')
-def login():
-    return render_template('login.html', error=None)
-
-@app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
@@ -24,49 +15,26 @@ def dashboard():
 def blind():
     return render_template('blind.html')
 
-@app.route('/update_location', methods=['POST'])
-def update_location():
-    data = request.json
-    blind_location['lat'] = data.get('lat', blind_location['lat'])
-    blind_location['lng'] = data.get('lng', blind_location['lng'])
-    return jsonify(status='ok')
+# Receive location from blind
+@socketio.on('location_update')
+def handle_location(data):
+    blind_path.append((data['lat'], data['lng']))
+    emit('update_map', {'location': data, 'path': blind_path}, broadcast=True)
 
-@app.route('/get_location')
-def get_location():
-    return jsonify(blind_location)
+# Emergency alert from blind
+@socketio.on('emergency')
+def handle_emergency(data):
+    emit('emergency_alert', data, broadcast=True)
 
-# Text messages
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    msg = request.json.get('message')
-    if msg:
-        messages.append(f"Blind: {msg}")
-    return jsonify(status='ok')
+# Send message from home to blind
+@socketio.on('message_to_blind')
+def message_to_blind(data):
+    emit('text_for_blind', data, broadcast=True)
 
-@app.route('/send_home_message', methods=['POST'])
-def send_home_message():
-    msg = request.json.get('message')
-    if msg:
-        messages.append(f"Home: {msg}")
-    return jsonify(status='ok')
-
-@app.route('/get_messages')
-def get_messages():
-    return jsonify(messages)
-
-# Upload audio from blind or home
-@app.route('/upload_audio', methods=['POST'])
-def upload_audio():
-    audio_file = request.files['audio']
-    filename = f"audio/{int(time.time())}.wav"
-    audio_file.save(filename)
-    messages.append(f"Audio message: {filename}")
-    return jsonify(status='ok')
-
-# Serve audio files
-@app.route('/audio/<filename>')
-def get_audio(filename):
-    return send_from_directory('audio', filename)
+# Send voice message from blind to home
+@socketio.on('voice_to_home')
+def voice_to_home(data):
+    emit('voice_from_blind', data, broadcast=True)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
