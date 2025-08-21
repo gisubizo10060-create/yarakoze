@@ -1,20 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login - Blind Tracker</title>
+  <title>Login - Home User</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="login-body">
-  <div class="login-container">
-    <h2>Home User Login</h2>
-    <form method="POST">
-      <input type="text" name="username" placeholder="Username" required><br>
-      <input type="password" name="password" placeholder="Password" required><br>
+<body>
+  <div class="centered">
+    <h1>Home User Login</h1>
+    <form action="/dashboard">
+      <input type="text" placeholder="Username" value="yarakoze" readonly><br>
+      <input type="password" placeholder="Password" value="rodger" readonly><br>
       <button type="submit">Login</button>
     </form>
-    {% if error %}
-      <p class="error">{{ error }}</p>
-    {% endif %}
   </div>
 </body>
 </html>

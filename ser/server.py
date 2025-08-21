@@ -1,86 +1,66 @@
-from flask import Flask, render_template, request, redirect, session, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
-from flask_socketio import SocketIO
 from gtts import gTTS
-import os, time
+import os
+import base64
+from io import BytesIO
 
 app = Flask(__name__)
-app.secret_key = "supersecret"
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
 
-# ----- In-memory state -----
-BLIND_STATE = {
-    "location": None,
-    "messages": [],
-    "emergency": False,
-    "voice_files": []
-}
+# Global variables
+latest_location = {}
+gps_path = []
+voice_messages = []  # {"sender":"home"/"blind", "content":"text or base64"}
 
-# ----- Login -----
-@app.route("/", methods=["GET", "POST"])
+# --- HOME USER ---
+@app.route('/')
 def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        if username == "homeuser" and password == "1234":
-            session["user"] = username
-            return redirect("/dashboard")
-        else:
-            return render_template("login.html", error="Invalid login")
-    return render_template("login.html", error=None)
+    return render_template('login.html', error=None)
 
-# ----- Dashboard -----
-@app.route("/dashboard")
+@app.route('/dashboard')
 def dashboard():
-    if "user" not in session:
-        return redirect("/")
-    return render_template("dashboard.html")
+    return render_template('dashboard.html')
 
-# ----- Blind interface -----
-@app.route("/blind")
+# --- BLIND ---
+@app.route('/blind')
 def blind():
-    return render_template("blind.html")
+    return render_template('blind.html')
 
-# ----- APIs -----
+# --- API ENDPOINTS ---
 @app.route("/api/gps", methods=["POST"])
-def update_gps():
-    BLIND_STATE["location"] = request.json
-    socketio.emit("gps_update", BLIND_STATE["location"])
+def gps():
+    global latest_location, gps_path
+    data = request.json
+    latest_location = {"lat": data["lat"], "lng": data["lng"]}
+    gps_path.append(latest_location)
     return jsonify({"status": "ok"})
 
-@app.route("/api/emergency", methods=["POST"])
-def emergency():
-    BLIND_STATE["emergency"] = True
-    socketio.emit("emergency_alert", {"time": time.time()})
-    return jsonify({"status": "alert sent"})
+@app.route("/api/get_gps")
+def get_gps():
+    return jsonify(latest_location)
 
-@app.route("/api/send_voice", methods=["POST"])
-def send_voice():
-    file = request.files["voice"]
-    path = f"static/voice_{int(time.time())}.wav"
-    file.save(path)
-    BLIND_STATE["voice_files"].append(path)
-    socketio.emit("voice_message", {"file": path})
-    return jsonify({"status": "voice sent"})
+@app.route("/api/get_path")
+def get_path():
+    return jsonify({"path": gps_path})
 
 @app.route("/api/send_message", methods=["POST"])
 def send_message():
-    msg = request.json["text"]
-    # Convert text to speech
-    tts = gTTS(msg)
-    filename = f"static/tts_{int(time.time())}.mp3"
-    tts.save(filename)
-    BLIND_STATE["messages"].append(filename)
-    socketio.emit("new_message", {"text": msg})
-    return jsonify({"status": "message sent"})
+    data = request.json  # {sender, content, type:"text"/"voice"}
+    # Convert text to voice if sender is home
+    if data["sender"] == "home" and data["type"] == "text":
+        tts = gTTS(text=data["content"], lang="en")
+        audio_io = BytesIO()
+        tts.write_to_fp(audio_io)
+        audio_io.seek(0)
+        data["content"] = base64.b64encode(audio_io.read()).decode('utf-8')
+        data["type"] = "voice"
+    voice_messages.append(data)
+    return jsonify({"status": "ok"})
 
-@app.route("/api/get_messages", methods=["GET"])
+@app.route("/api/get_messages")
 def get_messages():
-    if BLIND_STATE["messages"]:
-        file = BLIND_STATE["messages"].pop(0)
-        return send_file(file, as_attachment=True)
-    return jsonify({"status": "no messages"})
+    return jsonify(voice_messages)
 
-if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)

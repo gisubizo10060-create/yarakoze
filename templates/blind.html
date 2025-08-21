@@ -3,84 +3,14 @@
 <head>
   <title>Blind Stick Interface</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/blind.js"></script>
 </head>
-<body class="blind-body">
-  <h2>Blind Stick Phone</h2>
-  <button onclick="sendEmergency()">🚨 Emergency</button>
-  <button id="recordBtn">🎤 Record Voice</button>
-  <button onclick="getMessages()">🔊 Play Messages</button>
-
-  <script>
-    // GPS sending every 10s
-    setInterval(() => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          fetch("/api/gps", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({lat: pos.coords.latitude, lng: pos.coords.longitude})
-          });
-        });
-      }
-    }, 10000);
-
-    function sendEmergency() {
-      fetch("/api/emergency", {method: "POST"});
-      alert("🚨 Emergency sent to Home User!");
-    }
-
-    // ====== VOICE RECORDING ======
-    let mediaRecorder;
-    let audioChunks = [];
-    const recordBtn = document.getElementById("recordBtn");
-
-    recordBtn.addEventListener("click", async () => {
-      if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        // Start recording
-        let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = e => {
-          audioChunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(audioChunks, { type: "audio/wav" });
-          audioChunks = [];
-          let formData = new FormData();
-          formData.append("voice", blob, "voice.wav");
-
-          await fetch("/api/send_voice", {
-            method: "POST",
-            body: formData
-          });
-
-          alert("✅ Voice message sent!");
-        };
-
-        mediaRecorder.start();
-        recordBtn.innerText = "⏹ Stop Recording";
-      } else if (mediaRecorder.state === "recording") {
-        // Stop recording
-        mediaRecorder.stop();
-        recordBtn.innerText = "🎤 Record Voice";
-      }
-    });
-
-    function getMessages() {
-      fetch("/api/get_messages")
-      .then(res => {
-        if (res.headers.get("Content-Type").includes("audio")) {
-          res.blob().then(blob => {
-            let url = URL.createObjectURL(blob);
-            let audio = new Audio(url);
-            audio.play();
-          });
-        } else {
-          alert("No new messages");
-        }
-      });
-    }
-  </script>
+<body onload="startBlind()">
+  <div class="centered">
+    <h1>Blind Stick</h1>
+    <button onclick="sendGPS()">Send Current Location</button>
+    <button onclick="sendVoiceMessage()">Send Voice Message</button>
+    <div id="messages"></div>
+  </div>
 </body>
 </html>

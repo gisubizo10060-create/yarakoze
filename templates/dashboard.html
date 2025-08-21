@@ -1,62 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Home Dashboard</title>
+  <title>Dashboard - Home User</title>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+  <script src="/static/dashboard.js"></script>
 </head>
-<body>
-  <h1>Blind Person Tracking Dashboard</h1>
-  <div id="map"></div>
-
-  <div class="panel">
-    <h3>Send Message</h3>
-    <input type="text" id="msgInput" placeholder="Enter message">
-    <button onclick="sendMessage()">Send</button>
+<body onload="initMap(); startTracking();">
+  <div class="centered">
+    <h1>Blind Tracking Dashboard</h1>
+    <div id="map" style="width:80vw; height:60vh;"></div>
+    <div>
+      <input type="text" id="messageInput" placeholder="Message to blind">
+      <button onclick="sendMessage()">Send Voice/Text</button>
+    </div>
+    <div id="messages"></div>
   </div>
-
-  <div id="alerts"></div>
-  <div id="voiceMessages"></div>
-
-  <script>
-    const socket = io();
-    let map = L.map('map').setView([0,0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    let marker = null;
-    let polyline = L.polyline([], {color: 'blue'}).addTo(map);
-
-    socket.on("gps_update", (data) => {
-      if (data && data.lat && data.lng) {
-        if (!marker) {
-          marker = L.marker([data.lat, data.lng]).addTo(map);
-        } else {
-          marker.setLatLng([data.lat, data.lng]);
-        }
-        polyline.addLatLng([data.lat, data.lng]);
-        map.setView([data.lat, data.lng], 16);
-      }
-    });
-
-    socket.on("emergency_alert", () => {
-      document.getElementById("alerts").innerHTML = "<p class='alert'>🚨 Emergency Button Pressed!</p>";
-    });
-
-    socket.on("voice_message", (data) => {
-      let div = document.getElementById("voiceMessages");
-      div.innerHTML += `<audio controls src='/${data.file}'></audio><br>`;
-    });
-
-    function sendMessage() {
-      let msg = document.getElementById("msgInput").value;
-      fetch("/api/send_message", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({text: msg})
-      });
-      document.getElementById("msgInput").value = "";
-    }
-  </script>
 </body>
 </html>
