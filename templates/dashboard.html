@@ -2,18 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <title>Dashboard - Blind Stick</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Dashboard</h1>
-        <p><strong>Stick Status:</strong> <span id="stickStatus">Loading...</span></p>
-        <p><strong>Voice Messages:</strong> <span id="voiceMessages">No messages</span></p>
-        <div id="map"></div>
+    <div class="center-container">
+        <h2>Home User Dashboard</h2>
+        <div id="map" style="width: 600px; height: 400px;"></div>
+        <h3>Blind Stick Messages</h3>
+        <ul id="messages"></ul>
     </div>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+<script>
+    // Initialize map
+    var map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+    var marker = L.marker([0, 0]).addTo(map);
+
+    // Fetch updates every 3 seconds
+    function fetchUpdates() {
+        fetch('/get_updates')
+            .then(response => response.json())
+            .then(data => {
+                const loc = data.location;
+                if (loc.lat && loc.lng) {
+                    marker.setLatLng([loc.lat, loc.lng]);
+                    map.setView([loc.lat, loc.lng], 15);
+                }
+
+                const messagesUl = document.getElementById('messages');
+                messagesUl.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const li = document.createElement('li');
+                    li.textContent = msg;
+                    messagesUl.appendChild(li);
+                });
+            });
+    }
+    setInterval(fetchUpdates, 3000);
+    fetchUpdates();
+</script>
 </body>
 </html>
