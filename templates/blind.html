@@ -2,50 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Blind Stick - Send Location</title>
+    <title>Blind Stick Interface</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="center-container">
-        <h2>Blind Stick Interface</h2>
-        <button onclick="sendLocation()">Send My Location</button>
-        <textarea id="voiceMessage" placeholder="Type a message to home user"></textarea>
-        <button onclick="sendMessage()">Send Message</button>
-        <p id="status"></p>
+    <div class="center-container blind-container">
+        <h1>Blind Stick Interface</h1>
+        <div class="actions">
+            <button id="send-location">Send Location</button>
+            <button id="send-message">Send Voice/Message</button>
+        </div>
+        <div id="status" class="messages"></div>
     </div>
-
-<script>
-function sendLocation() {
-    if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser');
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition((position) => {
-        fetch('/update_location', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            })
-        }).then(() => {
-            document.getElementById('status').textContent = 'Location sent!';
-        });
-    });
-}
-
-function sendMessage() {
-    const msg = document.getElementById('voiceMessage').value;
-    fetch('/send_message', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message: msg })
-    }).then(() => {
-        document.getElementById('status').textContent = 'Message sent!';
-        document.getElementById('voiceMessage').value = '';
-    });
-}
-</script>
+    <script src="{{ url_for('static', filename='blind.js') }}"></script>
 </body>
 </html>
