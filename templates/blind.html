@@ -1,19 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Blind Stick Interface</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>Blind Tracker</title>
 </head>
 <body>
-    <div class="center-container blind-container">
-        <h1>Blind Stick Interface</h1>
-        <div class="actions">
-            <button id="send-location">Send Location</button>
-            <button id="send-message">Send Voice/Message</button>
-        </div>
-        <div id="status" class="messages"></div>
-    </div>
-    <script src="{{ url_for('static', filename='blind.js') }}"></script>
+<h2>Blind Tracker</h2>
+<p>Location is being sent to the home user dashboard.</p>
+
+<label>Send message:</label>
+<input id="msg" placeholder="Type message">
+
+<script>
+function sendLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            fetch('/update_location', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    message: document.getElementById('msg').value || "Moving"
+                })
+            });
+        });
+    } else {
+        alert("Geolocation not supported!");
+    }
+}
+
+// Send location every 3 seconds
+setInterval(sendLocation, 3000);
+</script>
 </body>
 </html>

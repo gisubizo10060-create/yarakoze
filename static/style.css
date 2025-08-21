@@ -1,52 +1,12 @@
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #74ebd5, #ACB6E5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
-
-.container, .login-container {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 30px;
-    border-radius: 15px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-input {
-    display: block;
-    width: 80%;
-    margin: 10px auto;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
-
-button {
-    padding: 10px 20px;
-    border-radius: 5px;
-    border: none;
-    background-color: #6C63FF;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
     color: white;
-    cursor: pointer;
+    font-family: Arial, sans-serif;
 }
 
-button:hover {
-    background-color: #574b90;
-}
-
-.message-box {
-    max-height: 150px;
-    overflow-y: auto;
-    background-color: #f1f1f1;
+input, button {
     padding: 10px;
+    margin: 5px;
     border-radius: 5px;
-    text-align: left;
-}
-
-.error {
-    color: red;
 }

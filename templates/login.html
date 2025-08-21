@@ -1,21 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Login - Blind Stick Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>Login</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="login-container">
-        <h1>Login</h1>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        <form method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-    </div>
+<h2>Login</h2>
+<form action="/dashboard" method="get">
+  <label>Username:</label>
+  <input type="text" name="username" value="yarakoze"><br><br>
+  <label>Password:</label>
+  <input type="password" name="password" value="rodger"><br><br>
+  <button type="submit">Login</button>
+</form>
 </body>
 </html>
