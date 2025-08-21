@@ -3,31 +3,60 @@
 <head>
   <title>Home Dashboard</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
 <body>
-<h2>Home Dashboard</h2>
-<div id="map" style="height:400px;"></div>
-<p>Message: <span id="message"></span></p>
+  <h1>Blind Person Tracking Dashboard</h1>
+  <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <div class="panel">
+    <h3>Send Message</h3>
+    <input type="text" id="msgInput" placeholder="Enter message">
+    <button onclick="sendMessage()">Send</button>
+  </div>
 
-<script>
-var map = L.map('map').setView([0,0], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-var marker = L.marker([0,0]).addTo(map);
+  <div id="alerts"></div>
+  <div id="voiceMessages"></div>
 
-function updateMap() {
-    fetch('/get_location')
-    .then(res => res.json())
-    .then(data => {
-        marker.setLatLng([data.latitude, data.longitude]);
-        document.getElementById('message').innerText = data.message;
-        map.setView([data.latitude, data.longitude], 13);
+  <script>
+    const socket = io();
+    let map = L.map('map').setView([0,0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let marker = null;
+    let polyline = L.polyline([], {color: 'blue'}).addTo(map);
+
+    socket.on("gps_update", (data) => {
+      if (data && data.lat && data.lng) {
+        if (!marker) {
+          marker = L.marker([data.lat, data.lng]).addTo(map);
+        } else {
+          marker.setLatLng([data.lat, data.lng]);
+        }
+        polyline.addLatLng([data.lat, data.lng]);
+        map.setView([data.lat, data.lng], 16);
+      }
     });
-}
 
-setInterval(updateMap, 3000);
-</script>
+    socket.on("emergency_alert", () => {
+      document.getElementById("alerts").innerHTML = "<p class='alert'>🚨 Emergency Button Pressed!</p>";
+    });
+
+    socket.on("voice_message", (data) => {
+      let div = document.getElementById("voiceMessages");
+      div.innerHTML += `<audio controls src='/${data.file}'></audio><br>`;
+    });
+
+    function sendMessage() {
+      let msg = document.getElementById("msgInput").value;
+      fetch("/api/send_message", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text: msg})
+      });
+      document.getElementById("msgInput").value = "";
+    }
+  </script>
 </body>
 </html>

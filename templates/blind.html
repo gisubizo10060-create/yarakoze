@@ -1,36 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Blind Tracker</title>
+  <title>Blind Stick Interface</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-<h2>Blind Tracker</h2>
-<p>Location is being sent to the home user dashboard.</p>
+<body class="blind-body">
+  <h2>Blind Stick Phone</h2>
+  <button onclick="sendEmergency()">🚨 Emergency</button>
+  <button id="recordBtn">🎤 Record Voice</button>
+  <button onclick="getMessages()">🔊 Play Messages</button>
 
-<label>Send message:</label>
-<input id="msg" placeholder="Type message">
-
-<script>
-function sendLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            fetch('/update_location', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    message: document.getElementById('msg').value || "Moving"
-                })
-            });
+  <script>
+    // GPS sending every 10s
+    setInterval(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          fetch("/api/gps", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({lat: pos.coords.latitude, lng: pos.coords.longitude})
+          });
         });
-    } else {
-        alert("Geolocation not supported!");
-    }
-}
+      }
+    }, 10000);
 
-// Send location every 3 seconds
-setInterval(sendLocation, 3000);
-</script>
+    function sendEmergency() {
+      fetch("/api/emergency", {method: "POST"});
+      alert("🚨 Emergency sent to Home User!");
+    }
+
+    // ====== VOICE RECORDING ======
+    let mediaRecorder;
+    let audioChunks = [];
+    const recordBtn = document.getElementById("recordBtn");
+
+    recordBtn.addEventListener("click", async () => {
+      if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        // Start recording
+        let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = e => {
+          audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: "audio/wav" });
+          audioChunks = [];
+          let formData = new FormData();
+          formData.append("voice", blob, "voice.wav");
+
+          await fetch("/api/send_voice", {
+            method: "POST",
+            body: formData
+          });
+
+          alert("✅ Voice message sent!");
+        };
+
+        mediaRecorder.start();
+        recordBtn.innerText = "⏹ Stop Recording";
+      } else if (mediaRecorder.state === "recording") {
+        // Stop recording
+        mediaRecorder.stop();
+        recordBtn.innerText = "🎤 Record Voice";
+      }
+    });
+
+    function getMessages() {
+      fetch("/api/get_messages")
+      .then(res => {
+        if (res.headers.get("Content-Type").includes("audio")) {
+          res.blob().then(blob => {
+            let url = URL.createObjectURL(blob);
+            let audio = new Audio(url);
+            audio.play();
+          });
+        } else {
+          alert("No new messages");
+        }
+      });
+    }
+  </script>
 </body>
 </html>

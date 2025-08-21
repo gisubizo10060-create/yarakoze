@@ -1,3 +1,5 @@
-Flask
-flask_cors
-
+flask
+flask-cors
+flask-socketio
+geopy
+gTTS
