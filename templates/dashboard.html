@@ -2,28 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard - Blind Stick</title>
+    <title>Blind Stick Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-    <div class="center-container dashboard-container">
+    <div class="container">
         <h1>Blind Stick Dashboard</h1>
         <h2>Current Blind Location:</h2>
-        <div id="map" style="height: 300px; background:#ddd; margin-bottom:20px;">
-            {% if blind_data.location %}
-                Lat: {{ blind_data.location.lat }}, Lng: {{ blind_data.location.lng }}
-            {% else %}
-                No location yet.
-            {% endif %}
-        </div>
+        <div id="map" style="height: 400px; border-radius: 10px;"></div>
 
         <h2>Messages from Blind:</h2>
-        <ul id="messages">
-            {% for msg in blind_data.messages %}
-                <li>{{ msg }}</li>
-            {% endfor %}
-        </ul>
+        <div id="messages" class="message-box"></div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const marker = L.marker([0, 0]).addTo(map);
+
+        function updateDashboard() {
+            fetch('/get_location')
+            .then(res => res.json())
+            .then(data => {
+                if(data.lat && data.lng){
+                    marker.setLatLng([data.lat, data.lng]);
+                    map.setView([data.lat, data.lng], 16);
+                }
+            });
+
+            fetch('/get_messages')
+            .then(res => res.json())
+            .then(data => {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = "";
+                data.forEach(msg => {
+                    const p = document.createElement('p');
+                    p.textContent = msg;
+                    messagesDiv.appendChild(p);
+                });
+            });
+        }
+
+        setInterval(updateDashboard, 3000);
+    </script>
 </body>
 </html>

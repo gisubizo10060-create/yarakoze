@@ -1,18 +1,14 @@
-# Blind Stick Tracker Dashboard
+# Blind Stick Dashboard
 
-This project allows a home user to monitor a blind person's movement in real-time using a GPS-enabled stick. The blind person can also send voice messages and alert obstacles.
+- Home user can see blind’s live location on a map.
+- Blind can send messages and location via POST request to `/blind`.
+- Dashboard updates automatically every 3 seconds.
+- Login credentials: 
+  - Username: `yarakoze`
+  - Password: `rodger`
 
-## Features
-- Login page
-- Dashboard with live map and path tracking
-- Blind stick interface to send movement, obstacle alerts, and voice messages
-- Interactive and centered design with gradient background
+## Run Locally
 
-## Setup
-1. Clone the repo
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run server: `python server.py`
-4. Access:
-   - Login: `/`
-   - Dashboard: `/dashboard`
-   - Blind stick: `/blind`
+```bash
+pip install -r requirements.txt
+python server.py

@@ -1,38 +1,46 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# Store latest data
-latest_data = {
-    "latitude": 0,
-    "longitude": 0,
-    "direction": "",
-    "obstacle": False,
-    "voice": ""
+# Store blind location and messages
+blind_data = {
+    'location': {'lat': 0, 'lng': 0},
+    'messages': []
 }
 
 @app.route('/')
-def login():
-    return render_template('login.html')
-
-@app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
-@app.route('/blind')
-def blind():
-    return render_template('blind.html')
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'yarakoze' and password == 'rodger':
+            return render_template('dashboard.html')
+        else:
+            error = 'Invalid credentials'
+    return render_template('login.html', error=error)
 
-@app.route('/update', methods=['POST'])
-def update_location():
-    global latest_data
-    data = request.get_json()
-    latest_data.update(data)
-    return jsonify({"status": "ok"})
+@app.route('/blind', methods=['POST'])
+def blind_update():
+    data = request.json
+    if 'lat' in data and 'lng' in data:
+        blind_data['location']['lat'] = data['lat']
+        blind_data['location']['lng'] = data['lng']
+    if 'message' in data:
+        blind_data['messages'].append(data['message'])
+    return jsonify({'status': 'success'})
 
-@app.route('/location', methods=['GET'])
+@app.route('/get_location')
 def get_location():
-    return jsonify(latest_data)
+    return jsonify(blind_data['location'])
+
+@app.route('/get_messages')
+def get_messages():
+    return jsonify(blind_data['messages'])
 
 if __name__ == "__main__":
     app.run(debug=True)
