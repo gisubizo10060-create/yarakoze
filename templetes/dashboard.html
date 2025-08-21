@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
 <body>
-    <h1>Blind Stick Dashboard</h1>
-    <div id="stickStatus"></div>
-    <div id="voiceMessages"></div>
-    <div id="map" style="height:500px;"></div>
-
+    <div class="container">
+        <h1>Dashboard</h1>
+        <p><strong>Stick Status:</strong> <span id="stickStatus">Loading...</span></p>
+        <p><strong>Voice Messages:</strong> <span id="voiceMessages">No messages</span></p>
+        <div id="map"></div>
+    </div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

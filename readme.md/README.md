@@ -1,39 +1,18 @@
 # Blind Stick Tracker Dashboard
 
-## Overview
-This project is a **real-time tracking system** for visually impaired users (blind stick).  
-It allows a home user to monitor the blind person's movement on a live map, receive obstacle alerts, and listen to voice messages sent by the blind person.
+This project allows a home user to monitor a blind person's movement in real-time using a GPS-enabled stick. The blind person can also send voice messages and alert obstacles.
 
 ## Features
-- **Home User Dashboard:**  
-  - Login page (username: Yarakoze, password: rodger)  
-  - Live map showing blind person's location  
-  - Alerts for movement direction and obstacles  
-  - Voice messages from blind person  
+- Login page
+- Dashboard with live map and path tracking
+- Blind stick interface to send movement, obstacle alerts, and voice messages
+- Interactive and centered design with gradient background
 
-- **Blind Stick Mobile Interface:**  
-  - Send movement directions (forward, left, right)  
-  - Send obstacle alerts  
-  - Send voice messages to home user  
-  - Tracks GPS location via phone  
-
-- **Backend Server:**  
-  - Flask server handles data updates and provides latest information  
-  - Endpoints:  
-    - `POST /update` → receives data from blind stick  
-    - `GET /latest` → sends latest data to dashboard  
-
-- **Simulation Script:**  
-  - `stick_test.py` can simulate blind stick data for testing  
-
-## Technologies Used
-- HTML, CSS, JavaScript (frontend)  
-- Python Flask (backend)  
-- Leaflet.js (interactive maps)  
-- Flask-CORS (cross-origin requests)  
-
-## Installation & Running Locally
-1. Clone or download the project folder.  
-2. Create a Python virtual environment:  
-   ```bash
-   python -m venv venv
+## Setup
+1. Clone the repo
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run server: `python server.py`
+4. Access:
+   - Login: `/`
+   - Dashboard: `/dashboard`
+   - Blind stick: `/blind`

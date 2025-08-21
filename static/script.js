@@ -1,35 +1,41 @@
-async function updateDashboard(){
-    try{
-        const serverUrl = window.location.origin; // automatically uses Render URL
-        const res = await fetch(`${serverUrl}/latest`);
-        const data = await res.json();
+const map = L.map('map').setView([0, 0], 2);
 
-        const statusDiv = document.getElementById("stickStatus");
-        if(statusDiv){
-            statusDiv.innerText = `Direction: ${data.direction || 'N/A'}, Obstacle: ${data.obstacle || false}`;
-        }
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-        const voiceDiv = document.getElementById("voiceMessages");
-        if(data.voice && data.voice !== ""){
-            voiceDiv.innerText = `Voice: ${data.voice}`;
-        }
+let stickMarker = null;
+let pathCoordinates = [];
+let pathLine = null;
 
-        if(data.latitude && data.longitude){
-            if(!window.map){
-                window.map = L.map('map').setView([data.latitude, data.longitude], 16);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19
-                }).addTo(window.map);
-                window.marker = L.marker([data.latitude, data.longitude]).addTo(window.map);
-            } else {
-                window.marker.setLatLng([data.latitude, data.longitude]);
-                window.map.setView([data.latitude, data.longitude]);
-            }
-        }
+function updateBlindLocation(data) {
+    const { latitude, longitude, direction, obstacle, voice } = data;
+    const latlng = [latitude, longitude];
 
-    } catch(e){
-        console.error(e);
+    if (!stickMarker) {
+        stickMarker = L.marker(latlng).addTo(map);
+        map.setView(latlng, 16);
+    } else {
+        stickMarker.setLatLng(latlng);
     }
+
+    pathCoordinates.push(latlng);
+    if (pathLine) {
+        pathLine.setLatLngs(pathCoordinates);
+    } else {
+        pathLine = L.polyline(pathCoordinates, { color: 'red', weight: 4 }).addTo(map);
+    }
+
+    document.getElementById('stickStatus').innerText = `Direction: ${direction || 'N/A'}, Obstacle: ${obstacle ? 'Yes' : 'No'}`;
+    if (voice) document.getElementById('voiceMessages').innerText = voice;
 }
 
-setInterval(updateDashboard, 2000);
+setInterval(async () => {
+    try {
+        const res = await fetch('/location');
+        const data = await res.json();
+        updateBlindLocation(data);
+    } catch (err) {
+        console.error('Error fetching location:', err);
+    }
+}, 2000);

@@ -1,23 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Blind Stick Mobile</title>
+    <meta charset="UTF-8">
+    <title>Blind Stick Interface</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Blind Stick Interface</h1>
-    <button onclick="sendMovement('forward')">Forward</button>
-    <button onclick="sendMovement('left')">Left</button>
-    <button onclick="sendMovement('right')">Right</button>
-    <button onclick="sendObstacle(true)">Obstacle!</button>
-    <input type="text" id="voice" placeholder="Voice message">
-    <button onclick="sendVoice()">Send Voice</button>
+    <div class="container">
+        <h1>Blind Stick Controller</h1>
+
+        <div class="movement-buttons">
+            <button onclick="sendMovement('forward')">Forward</button>
+            <button onclick="sendMovement('left')">Left</button>
+            <button onclick="sendMovement('right')">Right</button>
+            <button onclick="sendObstacle(true)">Obstacle!</button>
+        </div>
+
+        <div class="voice-message">
+            <input type="text" id="voice" placeholder="Send voice message">
+            <button onclick="sendVoice()">Send</button>
+        </div>
+    </div>
 
     <script>
-        const serverUrl = window.location.origin; // automatically uses Render URL
+        const serverUrl = window.location.origin;
 
         function sendMovement(direction){
-            navigator.geolocation.getCurrentPosition((pos)=>{
+            navigator.geolocation.getCurrentPosition(pos=>{
                 fetch(`${serverUrl}/update`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
@@ -33,7 +42,7 @@
         }
 
         function sendObstacle(flag){
-            navigator.geolocation.getCurrentPosition((pos)=>{
+            navigator.geolocation.getCurrentPosition(pos=>{
                 fetch(`${serverUrl}/update`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
@@ -50,7 +59,7 @@
 
         function sendVoice(){
             const message = document.getElementById("voice").value;
-            navigator.geolocation.getCurrentPosition((pos)=>{
+            navigator.geolocation.getCurrentPosition(pos=>{
                 fetch(`${serverUrl}/update`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
