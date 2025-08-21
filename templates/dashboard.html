@@ -1,20 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dashboard - Home User</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
-  <script src="/static/dashboard.js"></script>
+<meta charset="UTF-8">
+<title>Home User Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.css" />
 </head>
-<body onload="initMap(); startTracking();">
-  <div class="centered">
-    <h1>Blind Tracking Dashboard</h1>
-    <div id="map" style="width:80vw; height:60vh;"></div>
-    <div>
-      <input type="text" id="messageInput" placeholder="Message to blind">
-      <button onclick="sendMessage()">Send Voice/Text</button>
-    </div>
-    <div id="messages"></div>
-  </div>
-</body>
-</html>
+<body>
+<div class="centered">
+    <h1>Home User Dashboard</h1>
+    <div id="map" style="height:400px;width:80%;margin:auto;"></div>
+    <h3>Messages</h3>
+    <div id="messages" class="messages"></div>
+    <input type="text" id="msgInput" placeholder="Type message">
+    <button id="sendBtn">Send</button>
+</div>
+
+<script src="/static/blind.js"></script>
+
+<script>
+const map = L.map('map').setView([1.944, 30.061], 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+}).addTo(map);
+
+const marker = L.marker([1.944, 30.061]).addTo(map);
+let pathCoordinates = [[1.944, 30.061]];
+const pathLine = L.polyline(pathCoordinates, {color:'blue'}).addTo(map);
+
+async function updateLocation() {
+    const res = await fetch('/get_location');
+    const loc = await res.json();
+    marker.setLatLng([loc.lat, loc.lng]);
+    pathCoordinates.push([loc.lat, loc.lng]);
+    pathLine.setLatLngs(pathCoordinates);
+}
+
+setInterval(updateLocation, 3000);
+
+// Messages
+document.getElementById('sendBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('msgInput').value;
+    await fetch('/send_home_message', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({message: msg})
+    });
+    document.getElementById('msgInput').value = '';
+});
+
+function updateMessages() {
+    fetch('/get_messages')
+    .then(res => res.json())
+    .then(msgs => {
+        const container = document.getElementById('messages');
+        container.innerHTML = '';
+        msgs.forEach(m => {
+            if(m.startsWith('Audio message:')) {
+                const audio = document.createElement('audio');
+                au

@@ -1,17 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login - Home User</title>
-  <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<title>Home User Login</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="centered">
+<div class="centered">
     <h1>Home User Login</h1>
     <form action="/dashboard">
-      <input type="text" placeholder="Username" value="yarakoze" readonly><br>
-      <input type="password" placeholder="Password" value="rodger" readonly><br>
-      <button type="submit">Login</button>
+        <label>Name:</label>
+        <input type="text" name="name" value="yarakoze" required><br>
+        <label>Password:</label>
+        <input type="password" name="password" value="rodger" required><br>
+        <button type="submit">Login</button>
     </form>
-  </div>
+</div>
 </body>
 </html>

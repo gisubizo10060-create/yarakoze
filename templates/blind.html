@@ -1,16 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Blind Stick Interface</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/blind.js"></script>
+<meta charset="UTF-8">
+<title>Blind Stick</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
-<body onload="startBlind()">
-  <div class="centered">
+<body>
+<div class="centered">
     <h1>Blind Stick</h1>
-    <button onclick="sendGPS()">Send Current Location</button>
-    <button onclick="sendVoiceMessage()">Send Voice Message</button>
-    <div id="messages"></div>
-  </div>
+    <button id="emergency" class="circle-btn">!</button>
+    <button id="voiceBtn">Send Voice Message</button>
+</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blind Stick</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="centered">
+    <h1>Blind Stick</h1>
+    <button id="emergency" class="circle-btn">!</button>
+    <button id="recordBtn">Record Voice</button>
+    <button id="stopBtn" disabled>Stop</button>
+</div>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+
+document.getElementById('emergency').addEventListener('click', () => {
+    fetch('/send_message', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:'Emergency!'})
+    });
+});
+
+// Voice recording
+document.getElementById('recordBtn').addEventListener('click', async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, {type:'audio/wav'});
+        const formData = new FormData();
+        formData.append('audio', blob, 'voice.wav');
+        await fetch('/upload_audio', {method:'POST', body: formData});
+    };
+    mediaRecorder.start();
+    document.getElementById('stopBtn').disabled = false;
+});
+
+document.getElementById('stopBtn').addEventListener('click', () => {
+    mediaRecorder.stop();
+    document.getElementById('stopBtn').disabled = true;
+});
+</script>
+</body>
+</html>
+<script>
+document.getElementById('emergency').addEventListener('click', () => {
+    fetch('/send_message', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:'Emergency!'} )});
+});
+
+document.getElementById('voiceBtn').addEventListener('click', () => {
+    fetch('/send_message', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:'Voice message sent'} )});
+});
+
+// Simulate moving blind's location
+setInterval(() => {
+    fetch('/update_location', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({lat:1.944 + Math.random()*0.001, lng:30.061 + Math.random()*0.001})});
+}, 5000);
+</script>
 </body>
 </html>

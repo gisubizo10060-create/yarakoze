@@ -1,19 +1,17 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
-from gtts import gTTS
 import os
-import base64
-from io import BytesIO
+import time
 
 app = Flask(__name__)
 CORS(app)
 
-# Global variables
-latest_location = {}
-gps_path = []
-voice_messages = []  # {"sender":"home"/"blind", "content":"text or base64"}
+# Create folder for audio files
+os.makedirs('audio', exist_ok=True)
 
-# --- HOME USER ---
+blind_location = {'lat': 1.944, 'lng': 30.061}
+messages = []
+
 @app.route('/')
 def login():
     return render_template('login.html', error=None)
@@ -22,45 +20,53 @@ def login():
 def dashboard():
     return render_template('dashboard.html')
 
-# --- BLIND ---
 @app.route('/blind')
 def blind():
     return render_template('blind.html')
 
-# --- API ENDPOINTS ---
-@app.route("/api/gps", methods=["POST"])
-def gps():
-    global latest_location, gps_path
+@app.route('/update_location', methods=['POST'])
+def update_location():
     data = request.json
-    latest_location = {"lat": data["lat"], "lng": data["lng"]}
-    gps_path.append(latest_location)
-    return jsonify({"status": "ok"})
+    blind_location['lat'] = data.get('lat', blind_location['lat'])
+    blind_location['lng'] = data.get('lng', blind_location['lng'])
+    return jsonify(status='ok')
 
-@app.route("/api/get_gps")
-def get_gps():
-    return jsonify(latest_location)
+@app.route('/get_location')
+def get_location():
+    return jsonify(blind_location)
 
-@app.route("/api/get_path")
-def get_path():
-    return jsonify({"path": gps_path})
-
-@app.route("/api/send_message", methods=["POST"])
+# Text messages
+@app.route('/send_message', methods=['POST'])
 def send_message():
-    data = request.json  # {sender, content, type:"text"/"voice"}
-    # Convert text to voice if sender is home
-    if data["sender"] == "home" and data["type"] == "text":
-        tts = gTTS(text=data["content"], lang="en")
-        audio_io = BytesIO()
-        tts.write_to_fp(audio_io)
-        audio_io.seek(0)
-        data["content"] = base64.b64encode(audio_io.read()).decode('utf-8')
-        data["type"] = "voice"
-    voice_messages.append(data)
-    return jsonify({"status": "ok"})
+    msg = request.json.get('message')
+    if msg:
+        messages.append(f"Blind: {msg}")
+    return jsonify(status='ok')
 
-@app.route("/api/get_messages")
+@app.route('/send_home_message', methods=['POST'])
+def send_home_message():
+    msg = request.json.get('message')
+    if msg:
+        messages.append(f"Home: {msg}")
+    return jsonify(status='ok')
+
+@app.route('/get_messages')
 def get_messages():
-    return jsonify(voice_messages)
+    return jsonify(messages)
+
+# Upload audio from blind or home
+@app.route('/upload_audio', methods=['POST'])
+def upload_audio():
+    audio_file = request.files['audio']
+    filename = f"audio/{int(time.time())}.wav"
+    audio_file.save(filename)
+    messages.append(f"Audio message: {filename}")
+    return jsonify(status='ok')
+
+# Serve audio files
+@app.route('/audio/<filename>')
+def get_audio(filename):
+    return send_from_directory('audio', filename)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, host='0.0.0.0')
